@@ -1,103 +1,1269 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect, useRef } from "react";
+
+// --- DATA SOURCE ---
+const wordList = [
+  { en: "ability", th: "ความสามารถ" },
+  { en: "able", th: "สามารถ" },
+  { en: "about", th: "เกี่ยวกับ" },
+  { en: "above", th: "เหนือ" },
+  { en: "accept", th: "ยอมรับ" },
+  { en: "according", th: "ตามที่" },
+  { en: "account", th: "บัญชี" },
+  { en: "across", th: "ข้าม" },
+  { en: "act", th: "การกระทำ" },
+  { en: "action", th: "การปฏิบัติ" },
+  { en: "activity", th: "กิจกรรม" },
+  { en: "actually", th: "จริงๆแล้ว" },
+  { en: "add", th: "เพิ่ม" },
+  { en: "address", th: "ที่อยู่" },
+  { en: "administration", th: "การบริหาร" },
+  { en: "admit", th: "ยอมรับ" },
+  { en: "adult", th: "ผู้ใหญ่" },
+  { en: "affect", th: "มีผลต่อ" },
+  { en: "after", th: "หลังจาก" },
+  { en: "again", th: "อีกครั้ง" },
+  { en: "against", th: "ต่อต้าน" },
+  { en: "age", th: "อายุ" },
+  { en: "agency", th: "หน่วยงาน" },
+  { en: "agent", th: "ตัวแทน" },
+  { en: "ago", th: "ที่ผ่านมา" },
+  { en: "agree", th: "เห็นด้วย" },
+  { en: "agreement", th: "ข้อตกลง" },
+  { en: "ahead", th: "ล่วงหน้า" },
+  { en: "air", th: "อากาศ" },
+  { en: "all", th: "ทั้งหมด" },
+  { en: "allow", th: "อนุญาต" },
+  { en: "almost", th: "เกือบ" },
+  { en: "alone", th: "คนเดียว" },
+  { en: "along", th: "ตาม" },
+  { en: "already", th: "แล้ว" },
+  { en: "also", th: "เช่นกัน" },
+  { en: "although", th: "แม้ว่า" },
+  { en: "always", th: "เสมอ" },
+  { en: "American", th: "ชาวอเมริกัน" },
+  { en: "among", th: "ในหมู่" },
+  { en: "amount", th: "จำนวน" },
+  { en: "analysis", th: "การวิเคราะห์" },
+  { en: "and", th: "และ" },
+  { en: "animal", th: "สัตว์" },
+  { en: "another", th: "อื่น" },
+  { en: "answer", th: "คำตอบ" },
+  { en: "any", th: "ใดๆ" },
+  { en: "anyone", th: "ใครก็ได้" },
+  { en: "anything", th: "อะไรก็ได้" },
+  { en: "appear", th: "ปรากฏ" },
+  { en: "apply", th: "สมัคร" },
+  { en: "approach", th: "เข้าใกล้" },
+  { en: "area", th: "พื้นที่" },
+  { en: "argue", th: "โต้เถียง" },
+  { en: "arm", th: "แขน" },
+  { en: "around", th: "รอบๆ" },
+  { en: "arrive", th: "มาถึง" },
+  { en: "art", th: "ศิลปะ" },
+  { en: "article", th: "บทความ" },
+  { en: "artist", th: "ศิลปิน" },
+  { en: "as", th: "ในฐานะ" },
+  { en: "ask", th: "ถาม" },
+  { en: "assume", th: "สันนิษฐาน" },
+  { en: "at", th: "ที่" },
+  { en: "attack", th: "โจมตี" },
+  { en: "attention", th: "ความสนใจ" },
+  { en: "attorney", th: "ทนายความ" },
+  { en: "audience", th: "ผู้ชม" },
+  { en: "author", th: "ผู้เขียน" },
+  { en: "authority", th: "ผู้มีอำนาจ" },
+  { en: "available", th: "มีอยู่" },
+  { en: "avoid", th: "หลีกเลี่ยง" },
+  { en: "away", th: "ห่างออกไป" },
+  { en: "baby", th: "ทารก" },
+  { en: "back", th: "กลับ" },
+  { en: "bad", th: "ไม่ดี" },
+  { en: "bag", th: "กระเป๋า" },
+  { en: "ball", th: "ลูกบอล" },
+  { en: "bank", th: "ธนาคาร" },
+  { en: "bar", th: "บาร์" },
+  { en: "base", th: "ฐาน" },
+  { en: "be", th: "เป็น/อยู่/คือ" },
+  { en: "beat", th: "ตี" },
+  { en: "beautiful", th: "สวยงาม" },
+  { en: "because", th: "เพราะว่า" },
+  { en: "become", th: "กลายเป็น" },
+  { en: "bed", th: "เตียง" },
+  { en: "before", th: "ก่อน" },
+  { en: "begin", th: "เริ่มต้น" },
+  { en: "behavior", th: "พฤติกรรม" },
+  { en: "behind", th: "ข้างหลัง" },
+  { en: "believe", th: "เชื่อ" },
+  { en: "benefit", th: "ประโยชน์" },
+  { en: "best", th: "ดีที่สุด" },
+  { en: "better", th: "ดีกว่า" },
+  { en: "between", th: "ระหว่าง" },
+  { en: "beyond", th: "เกิน" },
+  { en: "big", th: "ใหญ่" },
+  { en: "bill", th: "บิล" },
+  { en: "billion", th: "พันล้าน" },
+  { en: "bit", th: "เล็กน้อย" },
+  { en: "black", th: "สีดำ" },
+  { en: "blood", th: "เลือด" },
+  { en: "blue", th: "สีน้ำเงิน" },
+  { en: "board", th: "กระดาน" },
+  { en: "body", th: "ร่างกาย" },
+  { en: "book", th: "หนังสือ" },
+  { en: "born", th: "เกิด" },
+  { en: "both", th: "ทั้งสอง" },
+  { en: "box", th: "กล่อง" },
+  { en: "boy", th: "เด็กชาย" },
+  { en: "break", th: "ทำลาย" },
+  { en: "bring", th: "นำมา" },
+  { en: "brother", th: "พี่ชาย/น้องชาย" },
+  { en: "budget", th: "งบประมาณ" },
+  { en: "build", th: "สร้าง" },
+  { en: "building", th: "อาคาร" },
+  { en: "business", th: "ธุรกิจ" },
+  { en: "but", th: "แต่" },
+  { en: "buy", th: "ซื้อ" },
+  { en: "by", th: "โดย" },
+  { en: "call", th: "โทร" },
+  { en: "camera", th: "กล้อง" },
+  { en: "campaign", th: "การรณรงค์" },
+  { en: "can", th: "สามารถ" },
+  { en: "cancer", th: "มะเร็ง" },
+  { en: "candidate", th: "ผู้สมัคร" },
+  { en: "capital", th: "เมืองหลวง" },
+  { en: "car", th: "รถยนต์" },
+  { en: "card", th: "การ์ด" },
+  { en: "care", th: "ดูแล" },
+  { en: "career", th: "อาชีพ" },
+  { en: "carry", th: "ถือ" },
+  { en: "case", th: "กรณี" },
+  { en: "catch", th: "จับ" },
+  { en: "cause", th: "สาเหตุ" },
+  { en: "cell", th: "เซลล์" },
+  { en: "center", th: "ศูนย์กลาง" },
+  { en: "central", th: "ส่วนกลาง" },
+  { en: "century", th: "ศตวรรษ" },
+  { en: "certain", th: "แน่นอน" },
+  { en: "certainly", th: "อย่างแน่นอน" },
+  { en: "chair", th: "เก้าอี้" },
+  { en: "challenge", th: "ความท้าทาย" },
+  { en: "chance", th: "โอกาส" },
+  { en: "change", th: "เปลี่ยนแปลง" },
+  { en: "character", th: "ตัวละคร" },
+  { en: "charge", th: "ค่าใช้จ่าย" },
+  { en: "check", th: "ตรวจสอบ" },
+  { en: "child", th: "เด็ก" },
+  { en: "choice", th: "ทางเลือก" },
+  { en: "choose", th: "เลือก" },
+  { en: "church", th: "โบสถ์" },
+  { en: "citizen", th: "พลเมือง" },
+  { en: "city", th: "เมือง" },
+  { en: "civil", th: "เกี่ยวกับพลเมือง" },
+  { en: "claim", th: "เรียกร้อง" },
+  { en: "class", th: "ชั้นเรียน" },
+  { en: "clear", th: "ชัดเจน" },
+  { en: "clearly", th: "อย่างชัดเจน" },
+  { en: "close", th: "ปิด" },
+  { en: "coach", th: "โค้ช" },
+  { en: "cold", th: "หนาว" },
+  { en: "collection", th: "การสะสม" },
+  { en: "college", th: "วิทยาลัย" },
+  { en: "color", th: "สี" },
+  { en: "come", th: "มา" },
+  { en: "commercial", th: "เชิงพาณิชย์" },
+  { en: "common", th: "ทั่วไป" },
+  { en: "community", th: "ชุมชน" },
+  { en: "company", th: "บริษัท" },
+  { en: "compare", th: "เปรียบเทียบ" },
+  { en: "computer", th: "คอมพิวเตอร์" },
+  { en: "concern", th: "ความกังวล" },
+  { en: "condition", th: "เงื่อนไข" },
+  { en: "conference", th: "การประชุม" },
+  { en: "Congress", th: "รัฐสภา" },
+  { en: "consider", th: "พิจารณา" },
+  { en: "consumer", th: "ผู้บริโภค" },
+  { en: "contain", th: "บรรจุ" },
+  { en: "continue", th: "ดำเนินต่อไป" },
+  { en: "control", th: "ควบคุม" },
+  { en: "cost", th: "ราคา" },
+  { en: "could", th: "สามารถ" },
+  { en: "country", th: "ประเทศ" },
+  { en: "couple", th: "คู่" },
+  { en: "course", th: "หลักสูตร" },
+  { en: "court", th: "ศาล" },
+  { en: "cover", th: "ปกคลุม" },
+  { en: "create", th: "สร้าง" },
+  { en: "crime", th: "อาชญากรรม" },
+  { en: "cultural", th: "ทางวัฒนธรรม" },
+  { en: "culture", th: "วัฒนธรรม" },
+  { en: "cup", th: "ถ้วย" },
+  { en: "current", th: "ปัจจุบัน" },
+  { en: "customer", th: "ลูกค้า" },
+  { en: "cut", th: "ตัด" },
+  { en: "dark", th: "มืด" },
+  { en: "data", th: "ข้อมูล" },
+  { en: "daughter", th: "ลูกสาว" },
+  { en: "day", th: "วัน" },
+  { en: "dead", th: "ตาย" },
+  { en: "deal", th: "จัดการ" },
+  { en: "death", th: "ความตาย" },
+  { en: "debate", th: "การโต้วาที" },
+  { en: "decade", th: "ทศวรรษ" },
+  { en: "decide", th: "ตัดสินใจ" },
+  { en: "decision", th: "การตัดสินใจ" },
+  { en: "deep", th: "ลึก" },
+  { en: "defense", th: "การป้องกัน" },
+  { en: "degree", th: "ระดับ" },
+  { en: "Democrat", th: "พรรคเดโมแครต" },
+  { en: "democratic", th: "ประชาธิปไตย" },
+  { en: "describe", th: "อธิบาย" },
+  { en: "design", th: "ออกแบบ" },
+  { en: "despite", th: "แม้ว่า" },
+  { en: "detail", th: "รายละเอียด" },
+  { en: "determine", th: "กำหนด" },
+  { en: "develop", th: "พัฒนา" },
+  { en: "development", th: "การพัฒนา" },
+  { en: "die", th: "ตาย" },
+  { en: "difference", th: "ความแตกต่าง" },
+  { en: "different", th: "แตกต่าง" },
+  { en: "difficult", th: "ยาก" },
+  { en: "dinner", th: "อาหารเย็น" },
+  { en: "direction", th: "ทิศทาง" },
+  { en: "director", th: "ผู้อำนวยการ" },
+  { en: "discover", th: "ค้นพบ" },
+  { en: "discuss", th: "หารือ" },
+  { en: "discussion", th: "การหารือ" },
+  { en: "disease", th: "โรค" },
+  { en: "do", th: "ทำ" },
+  { en: "doctor", th: "หมอ" },
+  { en: "dog", th: "สุนัข" },
+  { en: "door", th: "ประตู" },
+  { en: "down", th: "ลง" },
+  { en: "draw", th: "วาด" },
+  { en: "dream", th: "ความฝัน" },
+  { en: "drive", th: "ขับรถ" },
+  { en: "drop", th: "ทำหล่น" },
+  { en: "drug", th: "ยา" },
+  { en: "during", th: "ระหว่าง" },
+  { en: "each", th: "แต่ละ" },
+  { en: "early", th: "แต่เช้า" },
+  { en: "east", th: "ตะวันออก" },
+  { en: "easy", th: "ง่าย" },
+  { en: "eat", th: "กิน" },
+  { en: "economic", th: "เกี่ยวกับเศรษฐกิจ" },
+  { en: "economy", th: "เศรษฐกิจ" },
+  { en: "edge", th: "ขอบ" },
+  { en: "education", th: "การศึกษา" },
+  { en: "effect", th: "ผลกระทบ" },
+  { en: "effort", th: "ความพยายาม" },
+  { en: "eight", th: "แปด" },
+  { en: "either", th: "อย่างใดอย่างหนึ่ง" },
+  { en: "election", th: "การเลือกตั้ง" },
+  { en: "else", th: "อื่น" },
+  { en: "employee", th: "พนักงาน" },
+  { en: "end", th: "จบ" },
+  { en: "energy", th: "พลังงาน" },
+  { en: "enjoy", th: "สนุก" },
+  { en: "enough", th: "เพียงพอ" },
+  { en: "enter", th: "เข้า" },
+  { en: "entire", th: "ทั้งหมด" },
+  { en: "environment", th: "สิ่งแวดล้อม" },
+  { en: "environmental", th: "เกี่ยวกับสิ่งแวดล้อม" },
+  { en: "especially", th: "โดยเฉพาะ" },
+  { en: "establish", th: "จัดตั้ง" },
+  { en: "even", th: "แม้กระทั่ง" },
+  { en: "evening", th: "ตอนเย็น" },
+  { en: "event", th: "เหตุการณ์" },
+  { en: "ever", th: "เคย" },
+  { en: "every", th: "ทุก" },
+  { en: "everybody", th: "ทุกคน" },
+  { en: "everyone", th: "ทุกคน" },
+  { en: "everything", th: "ทุกสิ่ง" },
+  { en: "evidence", th: "หลักฐาน" },
+  { en: "exactly", th: "อย่างแน่นอน" },
+  { en: "example", th: "ตัวอย่าง" },
+  { en: "executive", th: "ผู้บริหาร" },
+  { en: "exist", th: "มีอยู่" },
+  { en: "expect", th: "คาดหวัง" },
+  { en: "experience", th: "ประสบการณ์" },
+  { en: "expert", th: "ผู้เชี่ยวชาญ" },
+  { en: "explain", th: "อธิบาย" },
+  { en: "eye", th: "ตา" },
+  { en: "face", th: "ใบหน้า" },
+  { en: "fact", th: "ความจริง" },
+  { en: "factor", th: "ปัจจัย" },
+  { en: "fail", th: "ล้มเหลว" },
+  { en: "fall", th: "ตก" },
+  { en: "family", th: "ครอบครัว" },
+  { en: "far", th: "ไกล" },
+  { en: "fast", th: "เร็ว" },
+  { en: "father", th: "พ่อ" },
+  { en: "fear", th: "ความกลัว" },
+  { en: "federal", th: "ของรัฐบาลกลาง" },
+  { en: "feel", th: "รู้สึก" },
+  { en: "feeling", th: "ความรู้สึก" },
+  { en: "few", th: "น้อย" },
+  { en: "field", th: "ทุ่ง" },
+  { en: "fight", th: "ต่อสู้" },
+  { en: "figure", th: "รูปร่าง" },
+  { en: "fill", th: "เติม" },
+  { en: "film", th: "ภาพยนตร์" },
+  { en: "final", th: "สุดท้าย" },
+  { en: "finally", th: "ในที่สุด" },
+  { en: "financial", th: "ทางการเงิน" },
+  { en: "find", th: "หา" },
+  { en: "fine", th: "สบายดี" },
+  { en: "finger", th: "นิ้ว" },
+  { en: "finish", th: "เสร็จ" },
+  { en: "fire", th: "ไฟ" },
+  { en: "firm", th: "บริษัท" },
+  { en: "first", th: "แรก" },
+  { en: "fish", th: "ปลา" },
+  { en: "five", th: "ห้า" },
+  { en: "floor", th: "พื้น" },
+  { en: "fly", th: "บิน" },
+  { en: "focus", th: "จุดสนใจ" },
+  { en: "follow", th: "ติดตาม" },
+  { en: "food", th: "อาหาร" },
+  { en: "foot", th: "เท้า" },
+  { en: "for", th: "สำหรับ" },
+  { en: "force", th: "บังคับ" },
+  { en: "foreign", th: "ต่างประเทศ" },
+  { en: "forget", th: "ลืม" },
+  { en: "form", th: "รูปแบบ" },
+  { en: "former", th: "อดีต" },
+  { en: "forward", th: "ไปข้างหน้า" },
+  { en: "four", th: "สี่" },
+  { en: "free", th: "อิสระ" },
+  { en: "friend", th: "เพื่อน" },
+  { en: "from", th: "จาก" },
+  { en: "front", th: "ข้างหน้า" },
+  { en: "full", th: "เต็ม" },
+  { en: "fund", th: "กองทุน" },
+  { en: "future", th: "อนาคต" },
+  { en: "game", th: "เกม" },
+  { en: "garden", th: "สวน" },
+  { en: "gas", th: "ก๊าซ" },
+  { en: "general", th: "ทั่วไป" },
+  { en: "generation", th: "รุ่น" },
+  { en: "get", th: "ได้รับ" },
+  { en: "girl", th: "เด็กผู้หญิง" },
+  { en: "give", th: "ให้" },
+  { en: "glass", th: "แก้ว" },
+  { en: "go", th: "ไป" },
+  { en: "goal", th: "เป้าหมาย" },
+  { en: "good", th: "ดี" },
+  { en: "government", th: "รัฐบาล" },
+  { en: "great", th: "ยิ่งใหญ่" },
+  { en: "green", th: "สีเขียว" },
+  { en: "ground", th: "พื้นดิน" },
+  { en: "group", th: "กลุ่ม" },
+  { en: "grow", th: "เติบโต" },
+  { en: "growth", th: "การเจริญเติบโต" },
+  { en: "guess", th: "เดา" },
+  { en: "gun", th: "ปืน" },
+  { en: "guy", th: "ผู้ชาย" },
+  { en: "hair", th: "ผม" },
+  { en: "half", th: "ครึ่ง" },
+  { en: "hand", th: "มือ" },
+  { en: "hang", th: "แขวน" },
+  { en: "happen", th: "เกิดขึ้น" },
+  { en: "happy", th: "มีความสุข" },
+  { en: "hard", th: "ยาก" },
+  { en: "have", th: "มี" },
+  { en: "he", th: "เขา" },
+  { en: "head", th: "หัว" },
+  { en: "health", th: "สุขภาพ" },
+  { en: "hear", th: "ได้ยิน" },
+  { en: "heart", th: "หัวใจ" },
+  { en: "heat", th: "ความร้อน" },
+  { en: "heavy", th: "หนัก" },
+  { en: "help", th: "ช่วย" },
+  { en: "her", th: "ของเธอ" },
+  { en: "here", th: "ที่นี่" },
+  { en: "herself", th: "ตัวเธอเอง" },
+  { en: "high", th: "สูง" },
+  { en: "him", th: "เขา" },
+  { en: "himself", th: "ตัวเขาเอง" },
+  { en: "his", th: "ของเขา" },
+  { en: "history", th: "ประวัติศาสตร์" },
+  { en: "hit", th: "ตี" },
+  { en: "hold", th: "ถือ" },
+  { en: "home", th: "บ้าน" },
+  { en: "hope", th: "หวัง" },
+  { en: "hospital", th: "โรงพยาบาล" },
+  { en: "hot", th: "ร้อน" },
+  { en: "hotel", th: "โรงแรม" },
+  { en: "hour", th: "ชั่วโมง" },
+  { en: "house", th: "บ้าน" },
+  { en: "how", th: "อย่างไร" },
+  { en: "however", th: "อย่างไรก็ตาม" },
+  { en: "huge", th: "ใหญ่โต" },
+  { en: "human", th: "มนุษย์" },
+  { en: "hundred", th: "ร้อย" },
+  { en: "husband", th: "สามี" },
+  { en: "I", th: "ฉัน" },
+  { en: "idea", th: "ความคิด" },
+  { en: "identify", th: "ระบุ" },
+  { en: "if", th: "ถ้า" },
+  { en: "image", th: "รูปภาพ" },
+  { en: "imagine", th: "จินตนาการ" },
+  { en: "impact", th: "ผลกระทบ" },
+  { en: "important", th: "สำคัญ" },
+  { en: "improve", th: "ปรับปรุง" },
+  { en: "in", th: "ใน" },
+  { en: "include", th: "รวม" },
+  { en: "including", th: "รวมถึง" },
+  { en: "increase", th: "เพิ่มขึ้น" },
+  { en: "indeed", th: "จริงๆ" },
+  { en: "indicate", th: "บ่งชี้" },
+  { en: "individual", th: "รายบุคคล" },
+  { en: "industry", th: "อุตสาหกรรม" },
+  { en: "information", th: "ข้อมูล" },
+  { en: "inside", th: "ข้างใน" },
+  { en: "instead", th: "แทน" },
+  { en: "institution", th: "สถาบัน" },
+  { en: "interest", th: "ความสนใจ" },
+  { en: "interesting", th: "น่าสนใจ" },
+  { en: "international", th: "ระหว่างประเทศ" },
+  { en: "interview", th: "สัมภาษณ์" },
+  { en: "into", th: "เข้าไปใน" },
+  { en: "investment", th: "การลงทุน" },
+  { en: "involve", th: "เกี่ยวข้อง" },
+  { en: "issue", th: "ประเด็น" },
+  { en: "it", th: "มัน" },
+  { en: "item", th: "รายการ" },
+  { en: "its", th: "ของมัน" },
+  { en: "itself", th: "ตัวมันเอง" },
+  { en: "job", th: "งาน" },
+  { en: "join", th: "เข้าร่วม" },
+  { en: "just", th: "เพิ่งจะ" },
+  { en: "keep", th: "เก็บ" },
+  { en: "key", th: "กุญแจ" },
+  { en: "kid", th: "เด็ก" },
+  { en: "kill", th: "ฆ่า" },
+  { en: "kind", th: "ชนิด" },
+  { en: "kitchen", th: "ห้องครัว" },
+  { en: "know", th: "รู้" },
+  { en: "knowledge", th: "ความรู้" },
+  { en: "land", th: "ที่ดิน" },
+  { en: "language", th: "ภาษา" },
+  { en: "large", th: "ใหญ่" },
+  { en: "last", th: "สุดท้าย" },
+  { en: "late", th: "สาย" },
+  { en: "later", th: "ภายหลัง" },
+  { en: "laugh", th: "หัวเราะ" },
+  { en: "law", th: "กฎหมาย" },
+  { en: "lawyer", th: "ทนายความ" },
+  { en: "lay", th: "วาง" },
+  { en: "lead", th: "นำ" },
+  { en: "leader", th: "ผู้นำ" },
+  { en: "learn", th: "เรียนรู้" },
+  { en: "least", th: "น้อยที่สุด" },
+  { en: "leave", th: "ออกจาก" },
+  { en: "left", th: "ซ้าย" },
+  { en: "leg", th: "ขา" },
+  { en: "legal", th: "เกี่ยวกับกฎหมาย" },
+  { en: "less", th: "น้อยกว่า" },
+  { en: "let", th: "ปล่อยให้" },
+  { en: "letter", th: "จดหมาย" },
+  { en: "level", th: "ระดับ" },
+  { en: "lie", th: "โกหก" },
+  { en: "life", th: "ชีวิต" },
+  { en: "light", th: "แสงสว่าง" },
+  { en: "like", th: "ชอบ" },
+  { en: "likely", th: "น่าจะ" },
+  { en: "line", th: "เส้น" },
+  { en: "list", th: "รายการ" },
+  { en: "listen", th: "ฟัง" },
+  { en: "little", th: "เล็กน้อย" },
+  { en: "live", th: "อาศัยอยู่" },
+  { en: "local", th: "ท้องถิ่น" },
+  { en: "long", th: "ยาว" },
+  { en: "look", th: "มอง" },
+  { en: "lose", th: "แพ้" },
+  { en: "loss", th: "การสูญเสีย" },
+  { en: "lot", th: "มาก" },
+  { en: "love", th: "รัก" },
+  { en: "low", th: "ต่ำ" },
+  { en: "machine", th: "เครื่องจักร" },
+  { en: "magazine", th: "นิตยสาร" },
+  { en: "main", th: "หลัก" },
+  { en: "maintain", th: "รักษา" },
+  { en: "major", th: "สำคัญ" },
+  { en: "majority", th: "ส่วนใหญ่" },
+  { en: "make", th: "ทำ" },
+  { en: "man", th: "ผู้ชาย" },
+  { en: "manage", th: "จัดการ" },
+  { en: "management", th: "การจัดการ" },
+  { en: "manager", th: "ผู้จัดการ" },
+  { en: "many", th: "มาก" },
+  { en: "market", th: "ตลาด" },
+  { en: "marriage", th: "การแต่งงาน" },
+  { en: "material", th: "วัสดุ" },
+  { en: "matter", th: "เรื่อง" },
+  { en: "may", th: "อาจจะ" },
+  { en: "maybe", th: "บางที" },
+  { en: "me", th: "ฉัน" },
+  { en: "mean", th: "หมายความว่า" },
+  { en: "measure", th: "วัด" },
+  { en: "media", th: "สื่อ" },
+  { en: "medical", th: "ทางการแพทย์" },
+  { en: "meet", th: "พบ" },
+  { en: "meeting", th: "การประชุม" },
+  { en: "member", th: "สมาชิก" },
+  { en: "memory", th: "ความจำ" },
+  { en: "mention", th: "กล่าวถึง" },
+  { en: "message", th: "ข้อความ" },
+  { en: "method", th: "วิธี" },
+  { en: "middle", th: "กลาง" },
+  { en: "might", th: "อาจจะ" },
+  { en: "military", th: "ทหาร" },
+  { en: "million", th: "ล้าน" },
+  { en: "mind", th: "จิตใจ" },
+  { en: "minute", th: "นาที" },
+  { en: "miss", th: "พลาด" },
+  { en: "mission", th: "ภารกิจ" },
+  { en: "model", th: "แบบ" },
+  { en: "modern", th: "ทันสมัย" },
+  { en: "moment", th: "ขณะ" },
+  { en: "money", th: "เงิน" },
+  { en: "month", th: "เดือน" },
+  { en: "more", th: "มากกว่า" },
+  { en: "morning", th: "ตอนเช้า" },
+  { en: "most", th: "มากที่สุด" },
+  { en: "mother", th: "แม่" },
+  { en: "mouth", th: "ปาก" },
+  { en: "move", th: "ย้าย" },
+  { en: "movement", th: "การเคลื่อนไหว" },
+  { en: "movie", th: "ภาพยนตร์" },
+  { en: "Mr", th: "นาย" },
+  { en: "Mrs", th: "นาง" },
+  { en: "much", th: "มาก" },
+  { en: "music", th: "ดนตรี" },
+  { en: "must", th: "ต้อง" },
+  { en: "my", th: "ของฉัน" },
+  { en: "myself", th: "ตัวเอง" },
+  { en: "name", th: "ชื่อ" },
+  { en: "nation", th: "ชาติ" },
+  { en: "national", th: "แห่งชาติ" },
+  { en: "natural", th: "ธรรมชาติ" },
+  { en: "nature", th: "ธรรมชาติ" },
+  { en: "near", th: "ใกล้" },
+  { en: "nearly", th: "เกือบ" },
+  { en: "necessary", th: "จำเป็น" },
+  { en: "need", th: "ต้องการ" },
+  { en: "network", th: "เครือข่าย" },
+  { en: "never", th: "ไม่เคย" },
+  { en: "new", th: "ใหม่" },
+  { en: "news", th: "ข่าว" },
+  { en: "newspaper", th: "หนังสือพิมพ์" },
+  { en: "next", th: "ถัดไป" },
+  { en: "nice", th: "ดี" },
+  { en: "night", th: "กลางคืน" },
+  { en: "no", th: "ไม่" },
+  { en: "none", th: "ไม่มี" },
+  { en: "nor", th: "ไม่" },
+  { en: "north", th: "ทิศเหนือ" },
+  { en: "not", th: "ไม่" },
+  { en: "note", th: "บันทึก" },
+  { en: "nothing", th: "ไม่มีอะไร" },
+  { en: "notice", th: "สังเกต" },
+  { en: "now", th: "ตอนนี้" },
+  { en: "number", th: "หมายเลข" },
+  { en: "occur", th: "เกิดขึ้น" },
+  { en: "of", th: "ของ" },
+  { en: "off", th: "ปิด" },
+  { en: "offer", th: "เสนอ" },
+  { en: "office", th: "สำนักงาน" },
+  { en: "officer", th: "เจ้าหน้าที่" },
+  { en: "official", th: "เป็นทางการ" },
+  { en: "often", th: "บ่อยๆ" },
+  { en: "oh", th: "โอ้" },
+  { en: "oil", th: "น้ำมัน" },
+  { en: "ok", th: "ตกลง" },
+  { en: "old", th: "เก่า" },
+  { en: "on", th: "บน" },
+  { en: "once", th: "ครั้งหนึ่ง" },
+  { en: "one", th: "หนึ่ง" },
+  { en: "only", th: "เท่านั้น" },
+  { en: "onto", th: "ไปยัง" },
+  { en: "open", th: "เปิด" },
+  { en: "operation", th: "การดำเนินการ" },
+  { en: "opportunity", th: "โอกาส" },
+  { en: "option", th: "ทางเลือก" },
+  { en: "or", th: "หรือ" },
+  { en: "order", th: "สั่ง" },
+  { en: "organization", th: "องค์กร" },
+  { en: "other", th: "อื่น" },
+  { en: "others", th: "อื่นๆ" },
+  { en: "our", th: "ของเรา" },
+  { en: "out", th: "ออก" },
+  { en: "outside", th: "ข้างนอก" },
+  { en: "over", th: "เหนือ" },
+  { en: "own", th: "ของตัวเอง" },
+  { en: "owner", th: "เจ้าของ" },
+  { en: "page", th: "หน้า" },
+  { en: "pain", th: "ความเจ็บปวด" },
+  { en: "painting", th: "ภาพวาด" },
+  { en: "paper", th: "กระดาษ" },
+  { en: "parent", th: "ผู้ปกครอง" },
+  { en: "part", th: "ส่วน" },
+  { en: "participant", th: "ผู้เข้าร่วม" },
+  { en: "particular", th: "โดยเฉพาะ" },
+  { en: "particularly", th: "โดยเฉพาะอย่างยิ่ง" },
+  { en: "partner", th: "คู่ค้า" },
+  { en: "party", th: "งานเลี้ยง" },
+  { en: "pass", th: "ผ่าน" },
+  { en: "past", th: "อดีต" },
+  { en: "patient", th: "คนไข้" },
+  { en: "pattern", th: "รูปแบบ" },
+  { en: "pay", th: "จ่าย" },
+  { en: "peace", th: "สันติภาพ" },
+  { en: "people", th: "ผู้คน" },
+  { en: "per", th: "ต่อ" },
+  { en: "perform", th: "แสดง" },
+  { en: "performance", th: "การแสดง" },
+  { en: "perhaps", th: "บางที" },
+  { en: "period", th: "ช่วงเวลา" },
+  { en: "person", th: "บุคคล" },
+  { en: "personal", th: "ส่วนตัว" },
+  { en: "phone", th: "โทรศัพท์" },
+  { en: "physical", th: "ทางกายภาพ" },
+  { en: "pick", th: "เลือก" },
+  { en: "picture", th: "รูปภาพ" },
+  { en: "piece", th: "ชิ้น" },
+  { en: "place", th: "สถานที่" },
+  { en: "plan", th: "แผน" },
+  { en: "plant", th: "พืช" },
+  { en: "play", th: "เล่น" },
+  { en: "player", th: "ผู้เล่น" },
+  { en: "PM", th: "หลังเที่ยง" },
+  { en: "point", th: "จุด" },
+  { en: "police", th: "ตำรวจ" },
+  { en: "policy", th: "นโยบาย" },
+  { en: "political", th: "ทางการเมือง" },
+  { en: "politics", th: "การเมือง" },
+  { en: "poor", th: "จน" },
+  { en: "popular", th: "เป็นที่นิยม" },
+  { en: "population", th: "ประชากร" },
+  { en: "position", th: "ตำแหน่ง" },
+  { en: "positive", th: "บวก" },
+  { en: "possible", th: "เป็นไปได้" },
+  { en: "power", th: "พลัง" },
+  { en: "practice", th: "ฝึกฝน" },
+  { en: "prepare", th: "เตรียม" },
+  { en: "present", th: "นำเสนอ" },
+  { en: "president", th: "ประธานาธิบดี" },
+  { en: "pressure", th: "ความกดดัน" },
+  { en: "pretty", th: "สวย" },
+  { en: "prevent", th: "ป้องกัน" },
+  { en: "price", th: "ราคา" },
+  { en: "private", th: "ส่วนตัว" },
+  { en: "probably", th: "น่าจะ" },
+  { en: "problem", th: "ปัญหา" },
+  { en: "process", th: "กระบวนการ" },
+  { en: "produce", th: "ผลิต" },
+  { en: "product", th: "ผลิตภัณฑ์" },
+  { en: "production", th: "การผลิต" },
+  { en: "professional", th: "มืออาชีพ" },
+  { en: "professor", th: "ศาสตราจารย์" },
+  { en: "program", th: "โปรแกรม" },
+  { en: "project", th: "โครงการ" },
+  { en: "property", th: "ทรัพย์สิน" },
+  { en: "protect", th: "ปกป้อง" },
+  { en: "prove", th: "พิสูจน์" },
+  { en: "provide", th: "จัดหา" },
+  { en: "public", th: "สาธารณะ" },
+  { en: "pull", th: "ดึง" },
+  { en: "purpose", th: "วัตถุประสงค์" },
+  { en: "push", th: "ผลัก" },
+  { en: "put", th: "วาง" },
+  { en: "quality", th: "คุณภาพ" },
+  { en: "question", th: "คำถาม" },
+  { en: "quickly", th: "อย่างรวดเร็ว" },
+  { en: "quite", th: "ค่อนข้าง" },
+  { en: "race", th: "การแข่งขัน" },
+  { en: "radio", th: "วิทยุ" },
+  { en: "raise", th: "ยก" },
+  { en: "range", th: "ช่วง" },
+  { en: "rate", th: "อัตรา" },
+  { en: "rather", th: "ค่อนข้าง" },
+  { en: "reach", th: "ไปถึง" },
+  { en: "read", th: "อ่าน" },
+  { en: "ready", th: "พร้อม" },
+  { en: "real", th: "จริง" },
+  { en: "reality", th: "ความจริง" },
+  { en: "realize", th: "ตระหนัก" },
+  { en: "really", th: "จริงๆ" },
+  { en: "reason", th: "เหตุผล" },
+  { en: "receive", th: "ได้รับ" },
+  { en: "recent", th: "ล่าสุด" },
+  { en: "recently", th: "เมื่อเร็วๆนี้" },
+  { en: "recognize", th: "จำได้" },
+  { en: "record", th: "บันทึก" },
+  { en: "red", th: "สีแดง" },
+  { en: "reduce", th: "ลด" },
+  { en: "reflect", th: "สะท้อน" },
+  { en: "region", th: "ภูมิภาค" },
+  { en: "relate", th: "เกี่ยวข้อง" },
+  { en: "relationship", th: "ความสัมพันธ์" },
+  { en: "religious", th: "เกี่ยวกับศาสนา" },
+  { en: "remain", th: "ยังคงอยู่" },
+  { en: "remember", th: "จำ" },
+  { en: "remove", th: "เอาออก" },
+  { en: "report", th: "รายงาน" },
+  { en: "represent", th: "เป็นตัวแทน" },
+  { en: "Republican", th: "พรรครีพับลิกัน" },
+  { en: "require", th: "ต้องการ" },
+  { en: "research", th: "วิจัย" },
+  { en: "resource", th: "ทรัพยากร" },
+  { en: "respond", th: "ตอบ" },
+  { en: "response", th: "การตอบสนอง" },
+  { en: "responsibility", th: "ความรับผิดชอบ" },
+  { en: "rest", th: "พักผ่อน" },
+  { en: "result", th: "ผลลัพธ์" },
+  { en: "return", th: "กลับ" },
+  { en: "reveal", th: "เปิดเผย" },
+  { en: "rich", th: "รวย" },
+  { en: "right", th: "ขวา" },
+  { en: "rise", th: "ขึ้น" },
+  { en: "risk", th: "ความเสี่ยง" },
+  { en: "road", th: "ถนน" },
+  { en: "rock", th: "หิน" },
+  { en: "role", th: "บทบาท" },
+  { en: "room", th: "ห้อง" },
+  { en: "rule", th: "กฎ" },
+  { en: "run", th: "วิ่ง" },
+  { en: "safe", th: "ปลอดภัย" },
+  { en: "same", th: "เหมือนกัน" },
+  { en: "save", th: "บันทึก" },
+  { en: "say", th: "พูด" },
+  { en: "scene", th: "ฉาก" },
+  { en: "school", th: "โรงเรียน" },
+  { en: "science", th: "วิทยาศาสตร์" },
+  { en: "scientist", th: "นักวิทยาศาสตร์" },
+  { en: "score", th: "คะแนน" },
+  { en: "sea", th: "ทะเล" },
+  { en: "season", th: "ฤดู" },
+  { en: "seat", th: "ที่นั่ง" },
+  { en: "second", th: "วินาที" },
+  { en: "section", th: "ส่วน" },
+  { en: "security", th: "ความปลอดภัย" },
+  { en: "see", th: "เห็น" },
+  { en: "seek", th: "ค้นหา" },
+  { en: "seem", th: "ดูเหมือน" },
+  { en: "sell", th: "ขาย" },
+  { en: "send", th: "ส่ง" },
+  { en: "senior", th: "อาวุโส" },
+  { en: "sense", th: "ความรู้สึก" },
+  { en: "series", th: "ชุด" },
+  { en: "serious", th: "จริงจัง" },
+  { en: "serve", th: "บริการ" },
+  { en: "service", th: "บริการ" },
+  { en: "set", th: "ตั้งค่า" },
+  { en: "seven", th: "เจ็ด" },
+  { en: "several", th: "หลาย" },
+  { en: "sex", th: "เพศ" },
+  { en: "sexual", th: "ทางเพศ" },
+  { en: "shake", th: "เขย่า" },
+  { en: "share", th: "แบ่งปัน" },
+  { en: "she", th: "เธอ" },
+  { en: "shoot", th: "ยิง" },
+  { en: "short", th: "สั้น" },
+  { en: "shot", th: "การยิง" },
+  { en: "should", th: "ควร" },
+  { en: "shoulder", th: "ไหล่" },
+  { en: "show", th: "แสดง" },
+  { en: "side", th: "ด้าน" },
+  { en: "sign", th: "เครื่องหมาย" },
+  { en: "significant", th: "สำคัญ" },
+  { en: "similar", th: "คล้ายกัน" },
+  { en: "simple", th: "ง่าย" },
+  { en: "simply", th: "อย่างง่าย" },
+  { en: "since", th: "ตั้งแต่" },
+  { en: "sing", th: "ร้องเพลง" },
+  { en: "single", th: "โสด" },
+  { en: "sister", th: "พี่สาว/น้องสาว" },
+  { en: "sit", th: "นั่ง" },
+  { en: "site", th: "เว็บไซต์" },
+  { en: "situation", th: "สถานการณ์" },
+  { en: "six", th: "หก" },
+  { en: "size", th: "ขนาด" },
+  { en: "skill", th: "ทักษะ" },
+  { en: "skin", th: "ผิว" },
+  { en: "small", th: "เล็ก" },
+  { en: "smile", th: "ยิ้ม" },
+  { en: "so", th: "ดังนั้น" },
+  { en: "social", th: "สังคม" },
+  { en: "society", th: "สังคม" },
+  { en: "soldier", th: "ทหาร" },
+  { en: "some", th: "บาง" },
+  { en: "somebody", th: "บางคน" },
+  { en: "someone", th: "บางคน" },
+  { en: "something", th: "บางสิ่ง" },
+  { en: "sometimes", th: "บางครั้ง" },
+  { en: "son", th: "ลูกชาย" },
+  { en: "song", th: "เพลง" },
+  { en: "soon", th: "เร็วๆนี้" },
+  { en: "sort", th: "ประเภท" },
+  { en: "sound", th: "เสียง" },
+  { en: "source", th: "แหล่งที่มา" },
+  { en: "south", th: "ทิศใต้" },
+  { en: "southern", th: "ทางใต้" },
+  { en: "space", th: "อวกาศ" },
+  { en: "speak", th: "พูด" },
+  { en: "special", th: "พิเศษ" },
+  { en: "specific", th: "เฉพาะ" },
+  { en: "speech", th: "คำพูด" },
+  { en: "spend", th: "ใช้จ่าย" },
+  { en: "sport", th: "กีฬา" },
+  { en: "spring", th: "ฤดูใบไม้ผลิ" },
+  { en: "staff", th: "พนักงาน" },
+  { en: "stage", th: "เวที" },
+  { en: "stand", th: "ยืน" },
+  { en: "standard", th: "มาตรฐาน" },
+  { en: "star", th: "ดาว" },
+  { en: "start", th: "เริ่มต้น" },
+  { en: "state", th: "รัฐ" },
+  { en: "statement", th: "คำแถลง" },
+  { en: "station", th: "สถานี" },
+  { en: "stay", th: "อยู่" },
+  { en: "step", th: "ขั้นตอน" },
+  { en: "still", th: "ยังคง" },
+  { en: "stock", th: "หุ้น" },
+  { en: "stop", th: "หยุด" },
+  { en: "store", th: "ร้านค้า" },
+  { en: "story", th: "เรื่องราว" },
+  { en: "strategy", th: "กลยุทธ์" },
+  { en: "street", th: "ถนน" },
+  { en: "strong", th: "แข็งแรง" },
+  { en: "structure", th: "โครงสร้าง" },
+  { en: "student", th: "นักเรียน" },
+  { en: "study", th: "เรียน" },
+  { en: "stuff", th: "สิ่งของ" },
+  { en: "style", th: "สไตล์" },
+  { en: "subject", th: "วิชา" },
+  { en: "success", th: "ความสำเร็จ" },
+  { en: "successful", th: "ประสบความสำเร็จ" },
+  { en: "such", th: "เช่น" },
+  { en: "suddenly", th: "ทันใดนั้น" },
+  { en: "suffer", th: "ทนทุกข์" },
+  { en: "suggest", th: "แนะนำ" },
+  { en: "summer", th: "ฤดูร้อน" },
+  { en: "support", th: "สนับสนุน" },
+  { en: "sure", th: "แน่นอน" },
+  { en: "surface", th: "พื้นผิว" },
+  { en: "system", th: "ระบบ" },
+  { en: "table", th: "โต๊ะ" },
+  { en: "take", th: "เอา" },
+  { en: "talk", th: "พูดคุย" },
+  { en: "task", th: "งาน" },
+  { en: "tax", th: "ภาษี" },
+  { en: "teach", th: "สอน" },
+  { en: "teacher", th: "ครู" },
+  { en: "team", th: "ทีม" },
+  { en: "technology", th: "เทคโนโลยี" },
+  { en: "television", th: "โทรทัศน์" },
+  { en: "tell", th: "บอก" },
+  { en: "ten", th: "สิบ" },
+  { en: "tend", th: "มีแนวโน้ม" },
+  { en: "term", th: "คำศัพท์" },
+  { en: "test", th: "ทดสอบ" },
+  { en: "than", th: "กว่า" },
+  { en: "thank", th: "ขอบคุณ" },
+  { en: "that", th: "นั่น" },
+  { en: "the", th: "the" },
+  { en: "their", th: "ของพวกเขา" },
+  { en: "them", th: "พวกเขา" },
+  { en: "themselves", th: "ตัวเอง" },
+  { en: "then", th: "แล้ว" },
+  { en: "theory", th: "ทฤษฎี" },
+  { en: "there", th: "ที่นั่น" },
+  { en: "these", th: "เหล่านี้" },
+  { en: "they", th: "พวกเขา" },
+  { en: "thing", th: "สิ่งของ" },
+  { en: "think", th: "คิด" },
+  { en: "third", th: "ที่สาม" },
+  { en: "this", th: "นี่" },
+  { en: "those", th: "เหล่านั้น" },
+  { en: "though", th: "แม้ว่า" },
+  { en: "thought", th: "ความคิด" },
+  { en: "thousand", th: "พัน" },
+  { en: "threat", th: "การคุกคาม" },
+  { en: "three", th: "สาม" },
+  { en: "through", th: "ผ่าน" },
+  { en: "throughout", th: "ตลอด" },
+  { en: "throw", th: "ขว้าง" },
+  { en: "thus", th: "ดังนั้น" },
+  { en: "time", th: "เวลา" },
+  { en: "to", th: "ถึง" },
+  { en: "today", th: "วันนี้" },
+  { en: "together", th: "ด้วยกัน" },
+  { en: "tonight", th: "คืนนี้" },
+  { en: "too", th: "ด้วย" },
+  { en: "top", th: "บนสุด" },
+  { en: "total", th: "ทั้งหมด" },
+  { en: "tough", th: "ยาก" },
+  { en: "toward", th: "ไปยัง" },
+  { en: "town", th: "เมือง" },
+  { en: "trade", th: "การค้า" },
+  { en: "traditional", th: "แบบดั้งเดิม" },
+  { en: "training", th: "การฝึกอบรม" },
+  { en: "travel", th: "เดินทาง" },
+  { en: "treat", th: "รักษา" },
+  { en: "treatment", th: "การรักษา" },
+  { en: "tree", th: "ต้นไม้" },
+  { en: "trial", th: "การทดลอง" },
+  { en: "trip", th: "การเดินทาง" },
+  { en: "trouble", th: "ปัญหา" },
+  { en: "true", th: "จริง" },
+  { en: "truth", th: "ความจริง" },
+  { en: "try", th: "พยายาม" },
+  { en: "turn", th: "เลี้ยว" },
+  { en: "TV", th: "ทีวี" },
+  { en: "two", th: "สอง" },
+  { en: "type", th: "ประเภท" },
+  { en: "under", th: "ใต้" },
+  { en: "understand", th: "เข้าใจ" },
+  { en: "unit", th: "หน่วย" },
+  { en: "until", th: "จนกระทั่ง" },
+  { en: "up", th: "ขึ้น" },
+  { en: "upon", th: "บน" },
+  { en: "us", th: "เรา" },
+  { en: "use", th: "ใช้" },
+  { en: "usually", th: "โดยปกติ" },
+  { en: "value", th: "ค่า" },
+  { en: "various", th: "หลากหลาย" },
+  { en: "very", th: "มาก" },
+  { en: "victim", th: "เหยื่อ" },
+  { en: "view", th: "มุมมอง" },
+  { en: "violence", th: "ความรุนแรง" },
+  { en: "visit", th: "เยี่ยม" },
+  { en: "voice", th: "เสียง" },
+  { en: "vote", th: "โหวต" },
+  { en: "wait", th: "รอ" },
+  { en: "walk", th: "เดิน" },
+  { en: "wall", th: "กำแพง" },
+  { en: "want", th: "ต้องการ" },
+  { en: "war", th: "สงคราม" },
+  { en: "watch", th: "ดู" },
+  { en: "water", th: "น้ำ" },
+  { en: "way", th: "ทาง" },
+  { en: "we", th: "เรา" },
+  { en: "weapon", th: "อาวุธ" },
+  { en: "wear", th: "สวมใส่" },
+  { en: "week", th: "สัปดาห์" },
+  { en: "weight", th: "น้ำหนัก" },
+  { en: "welcome", th: "ยินดีต้อนรับ" },
+  { en: "well", th: "ดี" },
+  { en: "west", th: "ทิศตะวันตก" },
+  { en: "western", th: "ตะวันตก" },
+  { en: "what", th: "อะไร" },
+  { en: "whatever", th: "อะไรก็ตาม" },
+  { en: "when", th: "เมื่อไหร่" },
+  { en: "where", th: "ที่ไหน" },
+  { en: "whether", th: "หรือไม่" },
+  { en: "which", th: "อันไหน" },
+  { en: "while", th: "ในขณะที่" },
+  { en: "white", th: "สีขาว" },
+  { en: "who", th: "ใคร" },
+  { en: "whole", th: "ทั้งหมด" },
+  { en: "whom", th: "ใคร" },
+  { en: "whose", th: "ของใคร" },
+  { en: "why", th: "ทำไม" },
+  { en: "wide", th: "กว้าง" },
+  { en: "wife", th: "ภรรยา" },
+  { en: "will", th: "จะ" },
+  { en: "win", th: "ชนะ" },
+  { en: "wind", th: "ลม" },
+  { en: "window", th: "หน้าต่าง" },
+  { en: "wish", th: "ปรารถนา" },
+  { en: "with", th: "กับ" },
+  { en: "within", th: "ภายใน" },
+  { en: "without", th: "ไม่มี" },
+  { en: "woman", th: "ผู้หญิง" },
+  { en: "wonder", th: "สงสัย" },
+  { en: "word", th: "คำ" },
+  { en: "work", th: "ทำงาน" },
+  { en: "worker", th: "คนงาน" },
+  { en: "world", th: "โลก" },
+  { en: "worry", th: "กังวล" },
+  { en: "would", th: "จะ" },
+  { en: "write", th: "เขียน" },
+  { en: "writer", th: "นักเขียน" },
+  { en: "wrong", th: "ผิด" },
+  { en: "yard", th: "ลาน" },
+  { en: "yeah", th: "ใช่" },
+  { en: "year", th: "ปี" },
+  { en: "yes", th: "ใช่" },
+  { en: "yet", th: "ยัง" },
+  { en: "you", th: "คุณ" },
+  { en: "young", th: "หนุ่มสาว" },
+  { en: "your", th: "ของคุณ" },
+  { en: "yourself", th: "ตัวคุณเอง" },
+];
+
+// Helper function to shuffle arrays
+const shuffleArray = (array) => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+// Card Component
+const WordCard = ({
+  word,
+  lang,
+  onClick,
+  isSelected,
+  isCorrect,
+  isIncorrect,
+}) => {
+  const getCardClass = () => {
+    let baseClass =
+      "card border-2 bg-white rounded-xl p-3 sm:p-4 text-center cursor-pointer text-base sm:text-lg font-medium text-slate-700 transition-all duration-200 ease-in-out";
+    if (isCorrect)
+      return `${baseClass} border-emerald-400 bg-green-50 text-green-800 opacity-80 cursor-not-allowed`;
+    if (isIncorrect)
+      return `${baseClass} border-red-400 bg-red-50 animate-shake`;
+    if (isSelected)
+      return `${baseClass} border-blue-500 bg-blue-50 transform -translate-y-0.5 scale-105 shadow-lg`;
+    return `${baseClass} border-slate-200 hover:border-blue-400 hover:-translate-y-0.5`;
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div className={getCardClass()} onClick={() => onClick({ word, lang })}>
+      {word}
     </div>
   );
-}
+};
+
+// Main Game Component
+const WordMatchGame = () => {
+  // State variables
+  const [currentWords, setCurrentWords] = useState([]);
+  const [englishWords, setEnglishWords] = useState([]);
+  const [thaiWords, setThaiWords] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [correctPairs, setCorrectPairs] = useState([]);
+  const [incorrectPair, setIncorrectPair] = useState(null);
+  const [message, setMessage] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Refs for audio synthesizers
+  const synths = useRef(null);
+
+  // Effect to run on client-side only
+  useEffect(() => {
+    setIsClient(true);
+    // Dynamically import Tone.js only on the client
+    import("tone").then((Tone) => {
+      synths.current = {
+        select: new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.001, decay: 0.1, sustain: 0.1, release: 0.1 },
+          volume: -18,
+        }).toDestination(),
+        correct: new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.3 },
+          volume: -12,
+        }).toDestination(),
+        incorrect: new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.1 },
+          volume: -14,
+        }).toDestination(),
+      };
+    });
+  }, []);
+
+  // Function to initialize or restart the game
+  const initGame = () => {
+    setIsChecking(true);
+    setMessage("");
+    setCorrectPairs([]);
+    setSelectedCard(null);
+    setIncorrectPair(null);
+
+    const newWordPairs = shuffleArray(wordList).slice(0, 4);
+    setCurrentWords(newWordPairs);
+    setEnglishWords(shuffleArray(newWordPairs.map((p) => p.en)));
+    setThaiWords(shuffleArray(newWordPairs.map((p) => p.th)));
+
+    setTimeout(() => setIsChecking(false), 500);
+  };
+
+  // Initialize game on component mount
+  useEffect(() => {
+    initGame();
+  }, []);
+
+  // Function to speak a word
+  const speakWord = (word) => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = "en-US";
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Card click handler
+  const handleCardClick = async (card) => {
+    if (
+      isChecking ||
+      correctPairs.includes(card.word) ||
+      correctPairs.includes(currentWords.find((p) => p.th === card.word)?.en)
+    )
+      return;
+
+    // Start audio context on first click
+    if (isClient && window.Tone && window.Tone.context.state !== "running") {
+      await window.Tone.start();
+    }
+
+    if (card.lang === "en") {
+      speakWord(card.word);
+    }
+
+    if (!selectedCard) {
+      setSelectedCard(card);
+      synths.current?.select.triggerAttackRelease("G5", "32n");
+    } else {
+      if (selectedCard.lang === card.lang) {
+        setSelectedCard(card);
+        synths.current?.select.triggerAttackRelease("G5", "32n");
+        return;
+      }
+
+      setIsChecking(true);
+
+      const [first, second] =
+        selectedCard.lang === "en"
+          ? [selectedCard, card]
+          : [card, selectedCard];
+      const isMatch = currentWords.some(
+        (p) => p.en === first.word && p.th === second.word
+      );
+
+      if (isMatch) {
+        setCorrectPairs((prev) => [...prev, first.word, second.word]);
+        setMessage("ถูกต้อง!");
+        synths.current?.correct.triggerAttackRelease(["C5", "G5"], "16n");
+        setSelectedCard(null);
+        if (correctPairs.length + 2 === 8) {
+          setTimeout(initGame, 1200);
+          setMessage("ยอดเยี่ยม! เริ่มรอบใหม่...");
+        } else {
+          setTimeout(() => {
+            setMessage("");
+            setIsChecking(false);
+          }, 800);
+        }
+      } else {
+        setIncorrectPair({ word1: selectedCard.word, word2: card.word });
+        setMessage("พยายามอีกครั้ง!");
+        synths.current?.incorrect.triggerAttackRelease("A2", "16n");
+        setTimeout(() => {
+          setIncorrectPair(null);
+          setSelectedCard(null);
+          setMessage("");
+          setIsChecking(false);
+        }, 1000);
+      }
+    }
+  };
+
+  if (!isClient) {
+    return null; // Render nothing on the server
+  }
+
+  return (
+    <>
+      <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+                .animate-shake {
+                    animation: shake 0.5s;
+                }
+                body {
+                    font-family: 'IBM Plex Sans Thai', 'Inter', sans-serif;
+                    -webkit-tap-highlight-color: transparent;
+                    background-color: #f8fafc; /* bg-slate-50 */
+                }
+            `}</style>
+      <div className="w-full h-svh max-w-2xl mx-auto bg-white p-4 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-col items-center justify-center w-full flex-1 h-full">
+          <div className="text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
+              เกมจับคู่คำศัพท์
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-slate-500">
+              เลือกคำศัพท์ภาษาอังกฤษและคำแปลภาษาไทยที่คู่กัน
+            </p>
+          </div>
+
+          <div className="mt-8 w-full">
+            <div
+              className={`text-center h-8 mb-4 text-lg font-semibold transition-all ${
+                message === "ถูกต้อง!" || message.startsWith("ยอดเยี่ยม")
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {message}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 w-full">
+              <div className="flex flex-col space-y-4 w-full">
+                {englishWords.map((word) => (
+                  <WordCard
+                    key={word}
+                    word={word}
+                    lang="en"
+                    onClick={handleCardClick}
+                    isSelected={selectedCard?.word === word}
+                    isCorrect={correctPairs.includes(word)}
+                    isIncorrect={
+                      incorrectPair?.word1 === word ||
+                      incorrectPair?.word2 === word
+                    }
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col space-y-4 w-full">
+                {thaiWords.map((word) => (
+                  <WordCard
+                    key={word}
+                    word={word}
+                    lang="th"
+                    onClick={handleCardClick}
+                    isSelected={selectedCard?.word === word}
+                    isCorrect={correctPairs.includes(word)}
+                    isIncorrect={
+                      incorrectPair?.word1 === word ||
+                      incorrectPair?.word2 === word
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default WordMatchGame;
