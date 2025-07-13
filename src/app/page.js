@@ -42,10 +42,13 @@ const WordCard = ({
   const getDifficultyIndicator = () => {
     if (stats.totalSeen === 0) return null;
     
-    if (weight > 1.5) {
-      return <div className="absolute top-1 right-1 text-red-500 text-xs">🔥</div>;
+    // แสดงไอคอนตามสถานะต่างๆ
+    if (stats.markedDifficult && stats.markedDifficult > 0) {
+      return <div className="absolute top-1 right-1 text-orange-500 text-xs" title={`Mark ยาก ${stats.markedDifficult} ครั้ง`}>🔖</div>;
+    } else if (weight > 1.5) {
+      return <div className="absolute top-1 right-1 text-red-500 text-xs" title="คำยาก">🔥</div>;
     } else if (weight < 0.3) {
-      return <div className="absolute top-1 right-1 text-green-500 text-xs">✨</div>;
+      return <div className="absolute top-1 right-1 text-green-500 text-xs" title="คำง่าย">✨</div>;
     }
     return null;
   };
@@ -354,6 +357,39 @@ const WordMatchGame = () => {
               </div>
             )}
             
+            {/* คำภาษาอังกฤษที่ถูก Mark ว่ายาก */}
+            {stats.markedDifficult.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-orange-600 mb-3">🔖 คำอังกฤษที่ถูก Mark ว่ายาก</h3>
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                  <div className="text-sm text-orange-700 mb-2">
+                    คำเหล่านี้ถูกคุณทำเครื่องหมายว่ายาก - ระบบจะให้เจอบ่อยขึ้น
+                  </div>
+                  <div className="space-y-2">
+                    {stats.markedDifficult.slice(0, 8).map((item, index) => (
+                      <div key={index} className="bg-white p-2 rounded border border-orange-200">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-500">🔖</span>
+                            <span className="font-medium text-slate-800">{item.word}</span>
+                          </div>
+                          <div className="text-right text-xs">
+                            <div className="text-orange-600 font-semibold">Mark {item.markedCount} ครั้ง</div>
+                            <div className="text-slate-500">น้ำหนัก {item.weight}</div>
+                          </div>
+                        </div>
+                        {item.lastMarked && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            Mark ล่าสุด: {item.lastMarked}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* ปุ่มควบคุม */}
             <div className="flex gap-2 mt-6">
               <button
@@ -427,7 +463,7 @@ const WordMatchGame = () => {
             </p>
             <div className="mt-2 text-xs text-slate-400 space-y-1">
               <div>💡 ระบบจะจำการเล่นของคุณและเลือกคำที่เหมาะสมให้</div>
-              <div>🔥 = คำยาก | ✨ = คำง่าย | 📊 = ดูสถิติ</div>
+              <div>🔥 = คำยาก | ✨ = คำง่าย | � = คำที่ mark | �📊 = ดูสถิติ</div>
             </div>
           </div>
 
@@ -489,6 +525,19 @@ const WordMatchGame = () => {
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
               >
                 🔄 เริ่มใหม่
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedCard && selectedCard.lang === 'en') {
+                    const newWeight = wordStatsManager.markAsDifficult(selectedCard.word);
+                    setMessage(`🔖 "${selectedCard.word}" ถูกทำเครื่องหมายว่ายาก! (น้ำหนัก: ${newWeight.toFixed(1)})`);
+                    setTimeout(() => setMessage(""), 2000);
+                  }
+                }}
+                disabled={!selectedCard || selectedCard.lang !== 'en'}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                🔖 Mark ยาก
               </button>
               <button
                 onClick={() => {

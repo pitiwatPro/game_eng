@@ -93,6 +93,27 @@ class WordStatsManager {
     stat.weight = Math.max(this.minWeight, Math.min(this.maxWeight, newWeight));
   }
 
+  // ทำเครื่องหมายคำว่ายาก (เพิ่ม weight)
+  markAsDifficult(word) {
+    const stat = this.getWordStat(word);
+    
+    // เพิ่ม weight ขึ้น 0.3 หรือตั้งเป็น 1.5 ถ้าต่ำกว่า
+    stat.weight = Math.max(1.5, stat.weight + 0.3);
+    
+    // จำกัดไม่ให้เกิน maxWeight
+    stat.weight = Math.min(this.maxWeight, stat.weight);
+    
+    // บันทึกการ mark ไว้ในสถิติ
+    if (!stat.markedDifficult) {
+      stat.markedDifficult = 0;
+    }
+    stat.markedDifficult++;
+    stat.lastMarked = Date.now();
+    
+    this.saveStats();
+    return stat.weight;
+  }
+
   // ได้รับ weight ของคำ
   getWordWeight(word) {
     return this.getWordStat(word).weight;
@@ -249,6 +270,17 @@ class WordStatsManager {
         weight: Math.round(item.weight * 100) / 100
       }));
     
+    // คำที่ถูก mark ว่ายาก
+    const markedDifficult = englishWordsPlayed
+      .filter(word => this.stats[word].markedDifficult && this.stats[word].markedDifficult > 0)
+      .map(word => ({
+        word,
+        markedCount: this.stats[word].markedDifficult,
+        weight: Math.round(this.stats[word].weight * 100) / 100,
+        lastMarked: this.stats[word].lastMarked ? new Date(this.stats[word].lastMarked).toLocaleString('th-TH') : null
+      }))
+      .sort((a, b) => b.markedCount - a.markedCount);
+    
     return {
       totalWordsInDatabase,
       wordsPlayedCount: englishWordsPlayed.length, // นับเฉพาะคำภาษาอังกฤษ
@@ -257,7 +289,8 @@ class WordStatsManager {
       overallAccuracy: totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0,
       mostIncorrect,
       leastAccurate,
-      needMorePractice
+      needMorePractice,
+      markedDifficult
     };
   }
 }
