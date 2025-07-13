@@ -74,6 +74,8 @@ const WordMatchGame = () => {
   const [isChecking, setIsChecking] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showMarkedWords, setShowMarkedWords] = useState(false);
+  const [statsUpdateKey, setStatsUpdateKey] = useState(0);
 
   // Refs for audio synthesizers
   const synths = useRef(null);
@@ -224,10 +226,20 @@ const WordMatchGame = () => {
 
   // Stats Component
   const StatsModal = () => {
-    const stats = wordStatsManager.getSummaryStats();
-    const wordListInfo = wordStatsManager.getWordListInfo();
+    const [statsData, setStatsData] = useState(null);
+    const [wordListInfo, setWordListInfo] = useState(null);
     
-    if (!showStats) return null;
+    // Load stats data when modal opens or when statsUpdateKey changes
+    useEffect(() => {
+      if (showStats) {
+        const stats = wordStatsManager.getSummaryStats();
+        const wordInfo = wordStatsManager.getWordListInfo();
+        setStatsData(stats);
+        setWordListInfo(wordInfo);
+      }
+    }, [showStats, statsUpdateKey]);
+    
+    if (!showStats || !statsData || !wordListInfo) return null;
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -249,26 +261,26 @@ const WordMatchGame = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-slate-600">คำทั้งหมดในเกม</div>
-                  <div className="text-xl font-bold text-blue-600">{stats.totalWordsInDatabase}</div>
+                  <div className="text-xl font-bold text-blue-600">{statsData.totalWordsInDatabase}</div>
                   <div className="text-xs text-slate-400">อัปเดตอัตโนมัติ</div>
                 </div>
                 <div>
                   <div className="text-slate-600">คำอังกฤษที่เล่นแล้ว</div>
-                  <div className="text-xl font-bold text-green-600">{stats.wordsPlayedCount}</div>
+                  <div className="text-xl font-bold text-green-600">{statsData.wordsPlayedCount}</div>
                   <div className="text-xs text-slate-400">
-                    {stats.totalWordsInDatabase > 0 ? 
-                      `${Math.round((stats.wordsPlayedCount / stats.totalWordsInDatabase) * 100)}% ของทั้งหมด` : 
+                    {statsData.totalWordsInDatabase > 0 ? 
+                      `${Math.round((statsData.wordsPlayedCount / statsData.totalWordsInDatabase) * 100)}% ของทั้งหมด` : 
                       '0%'
                     }
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-600">ตอบคำอังกฤษทั้งหมด</div>
-                  <div className="text-lg font-bold text-slate-700">{stats.totalAttempts} ครั้ง</div>
+                  <div className="text-lg font-bold text-slate-700">{statsData.totalAttempts} ครั้ง</div>
                 </div>
                 <div>
                   <div className="text-slate-600">ความแม่นยำรวม</div>
-                  <div className="text-lg font-bold text-emerald-600">{stats.overallAccuracy}%</div>
+                  <div className="text-lg font-bold text-emerald-600">{statsData.overallAccuracy}%</div>
                 </div>
               </div>
             </div>
@@ -277,22 +289,22 @@ const WordMatchGame = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between text-sm text-slate-600 mb-2">
                 <span>ความคืบหน้าการเรียนรู้ (คำอังกฤษ)</span>
-                <span>{Math.round((stats.wordsPlayedCount / stats.totalWordsInDatabase) * 100)}%</span>
+                <span>{Math.round((statsData.wordsPlayedCount / statsData.totalWordsInDatabase) * 100)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div 
                   className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${(stats.wordsPlayedCount / stats.totalWordsInDatabase) * 100}%` }}
+                  style={{ width: `${(statsData.wordsPlayedCount / statsData.totalWordsInDatabase) * 100}%` }}
                 />
               </div>
             </div>
             
             {/* คำภาษาอังกฤษที่ตอบผิดบ่อยที่สุด */}
-            {stats.mostIncorrect.length > 0 ? (
+            {statsData.mostIncorrect.length > 0 ? (
               <div>
                 <h3 className="font-semibold text-red-600 mb-3">🔥 คำอังกฤษที่ตอบผิดบ่อยที่สุด</h3>
                 <div className="space-y-2">
-                  {stats.mostIncorrect.slice(0, 5).map((item, index) => (
+                  {statsData.mostIncorrect.slice(0, 5).map((item, index) => (
                     <div key={index} className="bg-red-50 p-3 rounded-lg border border-red-200">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
@@ -310,7 +322,7 @@ const WordMatchGame = () => {
                   ))}
                 </div>
               </div>
-            ) : stats.wordsPlayedCount > 0 && (
+            ) : statsData.wordsPlayedCount > 0 && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
                 <div className="text-green-600 font-medium">🎉 ยังไม่มีคำภาษาอังกฤษที่ตอบผิด</div>
                 <div className="text-green-500 text-sm">เล่นต่อไปเพื่อสะสมข้อมูล</div>
@@ -318,11 +330,11 @@ const WordMatchGame = () => {
             )}
             
             {/* คำภาษาอังกฤษที่ความแม่นยำต่ำ */}
-            {stats.leastAccurate.length > 0 && (
+            {statsData.leastAccurate.length > 0 && (
               <div>
                 <h3 className="font-semibold text-orange-600 mb-3">⚠️ คำอังกฤษที่ความแม่นยำต่ำ</h3>
                 <div className="space-y-2">
-                  {stats.leastAccurate.slice(0, 5).map((item, index) => (
+                  {statsData.leastAccurate.slice(0, 5).map((item, index) => (
                     <div key={index} className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-slate-800">{item.word}</span>
@@ -338,7 +350,7 @@ const WordMatchGame = () => {
             )}
             
             {/* คำภาษาอังกฤษที่ต้องฝึกฝนเพิ่ม */}
-            {stats.needMorePractice.length > 0 && (
+            {statsData.needMorePractice.length > 0 && (
               <div>
                 <h3 className="font-semibold text-purple-600 mb-3">💪 คำอังกฤษที่ควรฝึกฝนเพิ่ม</h3>
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
@@ -346,7 +358,7 @@ const WordMatchGame = () => {
                     คำเหล่านี้มีความแม่นยำต่ำกว่า 70% - ระบบจะให้เจอบ่อยขึ้น
                   </div>
                   <div className="space-y-1">
-                    {stats.needMorePractice.slice(0, 8).map((item, index) => (
+                    {statsData.needMorePractice.slice(0, 8).map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
                         <span className="font-medium text-slate-800">{item.word}</span>
                         <span className="text-purple-600">{item.accuracy}%</span>
@@ -358,7 +370,7 @@ const WordMatchGame = () => {
             )}
             
             {/* คำภาษาอังกฤษที่ถูก Mark ว่ายาก */}
-            {stats.markedDifficult.length > 0 && (
+            {statsData.markedDifficult && statsData.markedDifficult.length > 0 && (
               <div>
                 <h3 className="font-semibold text-orange-600 mb-3">🔖 คำอังกฤษที่ถูก Mark ว่ายาก</h3>
                 <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
@@ -366,7 +378,7 @@ const WordMatchGame = () => {
                     คำเหล่านี้ถูกคุณทำเครื่องหมายว่ายาก - ระบบจะให้เจอบ่อยขึ้น
                   </div>
                   <div className="space-y-2">
-                    {stats.markedDifficult.slice(0, 8).map((item, index) => (
+                    {statsData.markedDifficult.slice(0, 8).map((item, index) => (
                       <div key={index} className="bg-white p-2 rounded border border-orange-200">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-2">
@@ -385,6 +397,24 @@ const WordMatchGame = () => {
                         )}
                       </div>
                     ))}
+                  </div>
+                  {statsData.markedDifficult && statsData.markedDifficult.length > 8 && (
+                    <div className="text-center mt-3 pt-2 border-t border-orange-200">
+                      <div className="text-xs text-orange-600">
+                        แสดง 8 จาก {statsData.markedDifficult.length} คำ
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-center mt-3 pt-2 border-t border-orange-200">
+                    <button
+                      onClick={() => {
+                        setShowStats(false);
+                        setShowMarkedWords(true);
+                      }}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                    >
+                      📋 ดูรายละเอียดทั้งหมด
+                    </button>
                   </div>
                 </div>
               </div>
@@ -424,6 +454,139 @@ const WordMatchGame = () => {
     );
   };
 
+  // Marked Words Modal Component
+  const MarkedWordsModal = () => {
+    const [markedWords, setMarkedWords] = useState([]);
+    
+    // Load marked words when modal opens or when stats update
+    useEffect(() => {
+      if (showMarkedWords) {
+        const words = wordStatsManager.getMarkedWordsWithTranslations();
+        setMarkedWords(words);
+      }
+    }, [showMarkedWords, statsUpdateKey]);
+    
+    if (!showMarkedWords) return null;
+    
+    const handleRemoveMark = (englishWord) => {
+      const success = wordStatsManager.removeMarkAsDifficult(englishWord);
+      if (success) {
+        setMessage(`🗑️ ยกเลิก mark "${englishWord}" แล้ว`);
+        setTimeout(() => setMessage(""), 2000);
+        // Force update stats modal
+        setStatsUpdateKey(prev => prev + 1);
+      }
+    };
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col">
+          {/* Header - Fixed at top */}
+          <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-slate-800">🔖 คำที่ Mark ว่ายาก</h2>
+            <button
+              onClick={() => setShowMarkedWords(false)}
+              className="text-slate-500 hover:text-slate-700 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {markedWords.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-6xl mb-4">🔖</div>
+                <p className="text-slate-600">ยังไม่มีคำที่ถูก mark ว่ายาก</p>
+                <p className="text-slate-400 text-sm mt-2">เลือกคำอังกฤษแล้วกดปุ่ม "🔖 Mark ยาก"</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-sm text-slate-600 mb-4">
+                  รายการคำที่คุณทำเครื่องหมายว่ายาก ({markedWords.length} คำ)
+                </div>
+                
+                {/* Grid layout for better space utilization */}
+                <div className="grid gap-3">
+                  {markedWords.map((item, index) => (
+                    <div key={index} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-orange-500">🔖</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-slate-800 truncate">
+                                {item.english}
+                              </div>
+                              <div className="text-slate-600 text-sm truncate">
+                                {item.thai}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+                            <div>Mark: {item.markedCount}x</div>
+                            <div>น้ำหนัก: {item.weight}</div>
+                            <div>แม่นยำ: {item.accuracy}%</div>
+                            <div>เล่น: {item.attempts}x</div>
+                          </div>
+                          
+                          {item.lastMarked && (
+                            <div className="text-xs text-slate-400 mt-1 truncate">
+                              {item.lastMarked}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => handleRemoveMark(item.english)}
+                          className="ml-2 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex-shrink-0"
+                          title={`ยกเลิก mark "${item.english}"`}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Footer - Fixed at bottom */}
+          <div className="p-6 pt-4 border-t border-gray-200 bg-white rounded-b-2xl">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (confirm(`คุณต้องการยกเลิก mark ทั้งหมด ${markedWords.length} คำหรือไม่?`)) {
+                    markedWords.forEach(item => {
+                      wordStatsManager.removeMarkAsDifficult(item.english);
+                    });
+                    setMessage("🗑️ ยกเลิก mark ทั้งหมดแล้ว");
+                    setTimeout(() => setMessage(""), 2000);
+                    // Force update stats modal
+                    setStatsUpdateKey(prev => prev + 1);
+                    setShowMarkedWords(false);
+                  }
+                }}
+                disabled={markedWords.length === 0}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                🗑️ ยกเลิกทั้งหมด
+              </button>
+              <button
+                onClick={() => setShowMarkedWords(false)}
+                className="flex-1 px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <style>{`
@@ -450,13 +613,22 @@ const WordMatchGame = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
                 🎯 เกมจับคู่คำศัพท์
               </h1>
-              <button
-                onClick={() => setShowStats(true)}
-                className="text-slate-500 hover:text-slate-700 text-2xl"
-                title="ดูสถิติ"
-              >
-                📊
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowMarkedWords(true)}
+                  className="text-slate-500 hover:text-orange-600 text-xl"
+                  title="ดูคำที่ mark ไว้"
+                >
+                  🔖
+                </button>
+                <button
+                  onClick={() => setShowStats(true)}
+                  className="text-slate-500 hover:text-slate-700 text-xl"
+                  title="ดูสถิติ"
+                >
+                  📊
+                </button>
+              </div>
             </div>
             <p className="mt-2 text-sm sm:text-base text-slate-500">
               เลือกคำศัพท์ภาษาอังกฤษและคำแปลภาษาไทยที่คู่กัน
@@ -532,6 +704,8 @@ const WordMatchGame = () => {
                     const newWeight = wordStatsManager.markAsDifficult(selectedCard.word);
                     setMessage(`🔖 "${selectedCard.word}" ถูกทำเครื่องหมายว่ายาก! (น้ำหนัก: ${newWeight.toFixed(1)})`);
                     setTimeout(() => setMessage(""), 2000);
+                    // Force update stats modal
+                    setStatsUpdateKey(prev => prev + 1);
                   }
                 }}
                 disabled={!selectedCard || selectedCard.lang !== 'en'}
@@ -556,6 +730,7 @@ const WordMatchGame = () => {
       </div>
       
       <StatsModal />
+      <MarkedWordsModal />
     </>
   );
 };

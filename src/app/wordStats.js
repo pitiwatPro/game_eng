@@ -114,6 +114,30 @@ class WordStatsManager {
     return stat.weight;
   }
 
+  // ลบการทำเครื่องหมายคำว่ายาก
+  removeMarkAsDifficult(word) {
+    const stat = this.getWordStat(word);
+    
+    if (stat.markedDifficult && stat.markedDifficult > 0) {
+      // ลดจำนวนการ mark
+      stat.markedDifficult--;
+      
+      // ถ้าไม่มีการ mark เหลืออยู่แล้ว ลบ properties ที่เกี่ยวข้อง
+      if (stat.markedDifficult === 0) {
+        delete stat.markedDifficult;
+        delete stat.lastMarked;
+      }
+      
+      // ปรับ weight ใหม่ตามสถิติการเล่น
+      this.updateWeight(word);
+      
+      this.saveStats();
+      return true;
+    }
+    
+    return false;
+  }
+
   // ได้รับ weight ของคำ
   getWordWeight(word) {
     return this.getWordStat(word).weight;
@@ -208,7 +232,8 @@ class WordStatsManager {
         overallAccuracy: 0,
         mostIncorrect: [],
         leastAccurate: [],
-        needMorePractice: []
+        needMorePractice: [],
+        markedDifficult: []
       };
     }
 
@@ -270,9 +295,15 @@ class WordStatsManager {
         weight: Math.round(item.weight * 100) / 100
       }));
     
-    // คำที่ถูก mark ว่ายาก
-    const markedDifficult = englishWordsPlayed
-      .filter(word => this.stats[word].markedDifficult && this.stats[word].markedDifficult > 0)
+    // คำที่ถูก mark ว่ายาก (รวมทั้งคำที่ยังไม่เคยเล่น)
+    const allWords = Object.keys(this.stats);
+    const markedDifficult = allWords
+      .filter(word => {
+        // กรองเฉพาะคำภาษาอังกฤษที่ถูก mark
+        const isEnglish = !/[\u0E00-\u0E7F]/.test(word);
+        const isMarked = this.stats[word].markedDifficult && this.stats[word].markedDifficult > 0;
+        return isEnglish && isMarked;
+      })
       .map(word => ({
         word,
         markedCount: this.stats[word].markedDifficult,
@@ -292,6 +323,41 @@ class WordStatsManager {
       needMorePractice,
       markedDifficult
     };
+  }
+
+  // ดึงคำที่ mark พร้อมคำแปล
+  getMarkedWordsWithTranslations() {
+    if (!this.stats || Object.keys(this.stats).length === 0) {
+      return [];
+    }
+    
+    const words = Object.keys(this.stats);
+    
+    // กรองเฉพาะคำภาษาอังกฤษที่ถูก mark
+    const markedEnglishWords = words.filter(word => {
+      const isEnglish = !/[\u0E00-\u0E7F]/.test(word);
+      const isMarked = this.stats[word].markedDifficult && this.stats[word].markedDifficult > 0;
+      return isEnglish && isMarked;
+    });
+
+    // หาคำแปลจาก wordList
+    const markedWordsWithTranslations = markedEnglishWords.map(englishWord => {
+      const wordPair = wordList.find(pair => pair.en === englishWord);
+      const stat = this.stats[englishWord];
+      
+      return {
+        english: englishWord,
+        thai: wordPair ? wordPair.th : 'ไม่พบคำแปล',
+        markedCount: stat.markedDifficult,
+        weight: Math.round(stat.weight * 100) / 100,
+        lastMarked: stat.lastMarked ? new Date(stat.lastMarked).toLocaleString('th-TH') : null,
+        accuracy: stat.totalSeen > 0 ? Math.round((stat.correct / stat.totalSeen) * 100) : 0,
+        attempts: stat.totalSeen
+      };
+    });
+
+    // เรียงตามจำนวนครั้งที่ mark มากที่สุด
+    return markedWordsWithTranslations.sort((a, b) => b.markedCount - a.markedCount);
   }
 }
 
