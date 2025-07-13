@@ -1,0 +1,266 @@
+// Word statistics management system
+import { wordList } from './constanct';
+
+class WordStatsManager {
+  constructor() {
+    this.storageKey = 'wordMatchGameStats';
+    this.stats = this.loadStats();
+    this.minWeight = 0.1; // น้อยสุด 10% ไม่ให้หายไปเลย
+    this.maxWeight = 2.0;  // มากสุด 200% สำหรับคำที่ผิดบ่อย
+  }
+
+  // โหลดสถิติจาก localStorage
+  loadStats() {
+    if (typeof window === 'undefined') return {};
+    
+    try {
+      const saved = localStorage.getItem(this.storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.warn('Failed to load word stats:', error);
+      return {};
+    }
+  }
+
+  // บันทึกสถิติลง localStorage
+  saveStats() {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.stats));
+    } catch (error) {
+      console.warn('Failed to save word stats:', error);
+    }
+  }
+
+  // รับสถิติของคำ หรือสร้างใหม่ถ้าไม่มี
+  getWordStat(word) {
+    if (!this.stats[word]) {
+      this.stats[word] = {
+        correct: 0,
+        incorrect: 0,
+        totalSeen: 0,
+        lastSeen: 0,
+        weight: 1.0
+      };
+    }
+    return this.stats[word];
+  }
+
+  // บันทึกผลการตอบ
+  recordAnswer(word, isCorrect) {
+    const stat = this.getWordStat(word);
+    
+    if (isCorrect) {
+      stat.correct++;
+    } else {
+      stat.incorrect++;
+    }
+    
+    stat.totalSeen++;
+    stat.lastSeen = Date.now();
+    
+    // คำนวณ weight ใหม่
+    this.updateWeight(word);
+    this.saveStats();
+  }
+
+  // คำนวณ weight สำหรับการสุ่ม
+  updateWeight(word) {
+    const stat = this.getWordStat(word);
+    
+    if (stat.totalSeen === 0) {
+      stat.weight = 1.0;
+      return;
+    }
+
+    const correctRate = stat.correct / stat.totalSeen;
+    const incorrectRate = stat.incorrect / stat.totalSeen;
+    
+    // คำที่ตอบถูกบ่อย = weight ลดลง
+    // คำที่ตอบผิดบ่อย = weight เพิ่มขึ้น
+    let newWeight = 1.0;
+    
+    if (correctRate > 0.7) {
+      // ถูกมากกว่า 70% ลด weight
+      newWeight = 1.0 - (correctRate - 0.7) * 2;
+    } else if (incorrectRate > 0.5) {
+      // ผิดมากกว่า 50% เพิ่ม weight
+      newWeight = 1.0 + (incorrectRate - 0.5) * 2;
+    }
+    
+    // จำกัด weight ให้อยู่ในช่วงที่กำหนด
+    stat.weight = Math.max(this.minWeight, Math.min(this.maxWeight, newWeight));
+  }
+
+  // ได้รับ weight ของคำ
+  getWordWeight(word) {
+    return this.getWordStat(word).weight;
+  }
+
+  // ได้รับจำนวนคำทั้งหมดในฐานข้อมูล
+  getTotalWordsCount() {
+    return wordList.length;
+  }
+
+  // ตรวจสอบว่า wordList มีการเปลี่ยนแปลงหรือไม่
+  getWordListInfo() {
+    return {
+      totalWords: wordList.length,
+      lastUpdated: new Date().toLocaleString('th-TH'),
+      sampleWords: wordList.slice(0, 5).map(item => item.en)
+    };
+  }
+
+  // สุ่มคำตาม weight
+  weightedRandomSelection(wordList, count = 4) {
+    if (wordList.length <= count) {
+      return [...wordList];
+    }
+
+    // คำนวณ weight รวม
+    const weights = wordList.map(word => {
+      const enWeight = this.getWordWeight(word.en);
+      const thWeight = this.getWordWeight(word.th);
+      // ใช้ weight เฉลี่ยของคู่คำ
+      return (enWeight + thWeight) / 2;
+    });
+
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const selected = [];
+    const availableWords = [...wordList];
+    const availableWeights = [...weights];
+
+    for (let i = 0; i < count && availableWords.length > 0; i++) {
+      const random = Math.random() * availableWeights.reduce((sum, w) => sum + w, 0);
+      let currentWeight = 0;
+      let selectedIndex = 0;
+
+      for (let j = 0; j < availableWeights.length; j++) {
+        currentWeight += availableWeights[j];
+        if (random <= currentWeight) {
+          selectedIndex = j;
+          break;
+        }
+      }
+
+      // เพิ่มคำที่เลือกได้
+      selected.push(availableWords[selectedIndex]);
+      
+      // ลบออกจาก available arrays
+      availableWords.splice(selectedIndex, 1);
+      availableWeights.splice(selectedIndex, 1);
+    }
+
+    return selected;
+  }
+
+  // รีเซ็ตสถิติทั้งหมด
+  resetStats() {
+    this.stats = {};
+    this.saveStats();
+  }
+
+  // ดูสถิติของคำทั้งหมด
+  getAllStats() {
+    return { ...this.stats };
+  }
+
+  // ดูสถิติสรุป
+  getSummaryStats() {
+    const words = Object.keys(this.stats);
+    const totalWordsInDatabase = wordList.length; // คำนวณจาก wordList จริง
+    
+    // กรองเฉพาะคำภาษาอังกฤษที่เล่นแล้ว
+    const englishWordsPlayed = words.filter(word => {
+      const isEnglish = !/[\u0E00-\u0E7F]/.test(word);
+      const hasBeenPlayed = this.stats[word].totalSeen > 0;
+      return isEnglish && hasBeenPlayed;
+    });
+    
+    if (englishWordsPlayed.length === 0) {
+      return {
+        totalWordsInDatabase,
+        wordsPlayedCount: 0,
+        totalAttempts: 0,
+        totalCorrect: 0,
+        overallAccuracy: 0,
+        mostIncorrect: [],
+        leastAccurate: [],
+        needMorePractice: []
+      };
+    }
+
+    // คำนวณสถิติรวมจากคำภาษาอังกฤษเท่านั้น
+    let totalAttempts = 0;
+    let totalCorrect = 0;
+    
+    const detailedStats = englishWordsPlayed.map(word => {
+      const stat = this.stats[word];
+      totalAttempts += stat.totalSeen;
+      totalCorrect += stat.correct;
+      
+      const correctRate = stat.correct / stat.totalSeen;
+      return {
+        word,
+        correct: stat.correct,
+        incorrect: stat.incorrect,
+        totalSeen: stat.totalSeen,
+        correctRate,
+        incorrectRate: stat.incorrect / stat.totalSeen,
+        weight: stat.weight
+      };
+    });
+
+    // ฟิลเตอร์เฉพาะคำที่มีการตอบผิด
+    const englishWordsWithErrors = detailedStats.filter(item => item.incorrect > 0);
+
+    // เรียงตามจำนวนครั้งที่ตอบผิดมากที่สุด
+    const mostIncorrect = englishWordsWithErrors
+      .sort((a, b) => b.incorrect - a.incorrect)
+      .slice(0, 10)
+      .map(item => ({
+        word: item.word,
+        incorrectCount: item.incorrect,
+        correctCount: item.correct,
+        accuracy: Math.round(item.correctRate * 100)
+      }));
+
+    // เรียงตามอัตราความถูกต้องต่ำที่สุด (แต่ต้องเล่นอย่างน้อย 2 ครั้ง)
+    const leastAccurate = englishWordsWithErrors
+      .filter(item => item.totalSeen >= 2)
+      .sort((a, b) => a.correctRate - b.correctRate)
+      .slice(0, 10)
+      .map(item => ({
+        word: item.word,
+        accuracy: Math.round(item.correctRate * 100),
+        attempts: item.totalSeen,
+        incorrectCount: item.incorrect
+      }));
+
+    // คำที่ต้องฝึกฝนเพิ่ม (accuracy < 70% และเล่นแล้วอย่างน้อย 3 ครั้ง)
+    const needMorePractice = englishWordsWithErrors
+      .filter(item => item.correctRate < 0.7 && item.totalSeen >= 3)
+      .sort((a, b) => a.correctRate - b.correctRate)
+      .map(item => ({
+        word: item.word,
+        accuracy: Math.round(item.correctRate * 100),
+        attempts: item.totalSeen,
+        weight: Math.round(item.weight * 100) / 100
+      }));
+    
+    return {
+      totalWordsInDatabase,
+      wordsPlayedCount: englishWordsPlayed.length, // นับเฉพาะคำภาษาอังกฤษ
+      totalAttempts, // ผลรวมจากคำภาษาอังกฤษเท่านั้น
+      totalCorrect, // ผลรวมจากคำภาษาอังกฤษเท่านั้น
+      overallAccuracy: totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0,
+      mostIncorrect,
+      leastAccurate,
+      needMorePractice
+    };
+  }
+}
+
+// Export singleton instance
+export const wordStatsManager = new WordStatsManager();
