@@ -721,6 +721,34 @@ const WordMatchGame = () => {
             {/* Control buttons */}
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <button
+                onClick={() => {
+                  if (selectedCard && selectedCard.lang === 'en') {
+                    const newWeight = wordStatsManager.markAsDifficult(selectedCard.word);
+                    setMessage(`🔖 "${selectedCard.word}" ถูกทำเครื่องหมายว่ายาก! (น้ำหนัก: ${newWeight.toFixed(1)})`);
+                    setTimeout(() => setMessage(""), 2000);
+                    // Force update stats modal
+                    setStatsUpdateKey(prev => prev + 1);
+                  }
+                }}
+                disabled={!selectedCard || selectedCard.lang !== 'en'}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                🔖 Mark ยาก
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (selectedCard && selectedCard.lang === 'en') {
+                    speakWord(selectedCard.word);
+                  }
+                }}
+                disabled={!selectedCard || selectedCard.lang !== 'en'}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                🔊 ฟังเสียง
+              </button>
+              
+              <button
                 onClick={initGame}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
               >
@@ -752,33 +780,6 @@ const WordMatchGame = () => {
                   }
                 </button>
               )}
-              
-              <button
-                onClick={() => {
-                  if (selectedCard && selectedCard.lang === 'en') {
-                    const newWeight = wordStatsManager.markAsDifficult(selectedCard.word);
-                    setMessage(`🔖 "${selectedCard.word}" ถูกทำเครื่องหมายว่ายาก! (น้ำหนัก: ${newWeight.toFixed(1)})`);
-                    setTimeout(() => setMessage(""), 2000);
-                    // Force update stats modal
-                    setStatsUpdateKey(prev => prev + 1);
-                  }
-                }}
-                disabled={!selectedCard || selectedCard.lang !== 'en'}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                🔖 Mark ยาก
-              </button>
-              <button
-                onClick={() => {
-                  if (selectedCard && selectedCard.lang === 'en') {
-                    speakWord(selectedCard.word);
-                  }
-                }}
-                disabled={!selectedCard || selectedCard.lang !== 'en'}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                🔊 ฟังเสียง
-              </button>
             </div>
           </div>
         </div>
