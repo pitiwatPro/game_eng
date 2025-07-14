@@ -239,6 +239,61 @@ class WordStatsManager {
     return selected;
   }
 
+  // สุ่มเฉพาะคำที่ mark ไว้ (สำหรับโหมดฝึกคำยาก)
+  markedWordsRandomSelection(count = 4) {
+    const markedWords = this.getMarkedWordsWithTranslations();
+    
+    if (markedWords.length < count) {
+      // ถ้าไม่มีคำ mark เพียงพอ ให้ return ทั้งหมดที่มี
+      return markedWords.map(item => ({
+        en: item.english,
+        th: item.thai
+      }));
+    }
+
+    // ถ้ามีพอ ให้สุ่มตาม weight (คำที่ยากกว่าจะถูกเลือกบ่อยกว่า)
+    const weights = markedWords.map(item => {
+      return this.getWordWeight(item.english);
+    });
+
+    const selected = [];
+    const availableWords = [...markedWords];
+    const availableWeights = [...weights];
+
+    for (let i = 0; i < count && availableWords.length > 0; i++) {
+      const totalWeight = availableWeights.reduce((sum, w) => sum + w, 0);
+      const random = Math.random() * totalWeight;
+      let currentWeight = 0;
+      let selectedIndex = 0;
+
+      for (let j = 0; j < availableWeights.length; j++) {
+        currentWeight += availableWeights[j];
+        if (random <= currentWeight) {
+          selectedIndex = j;
+          break;
+        }
+      }
+
+      // เพิ่มคำที่เลือกได้
+      selected.push({
+        en: availableWords[selectedIndex].english,
+        th: availableWords[selectedIndex].thai
+      });
+      
+      // ลบออกจาก available arrays
+      availableWords.splice(selectedIndex, 1);
+      availableWeights.splice(selectedIndex, 1);
+    }
+
+    return selected;
+  }
+
+  // ตรวจสอบจำนวนคำที่ mark ว่าพอทำเกมหรือไม่
+  canPlayMarkedMode(minWords = 10) {
+    const markedWords = this.getMarkedWordsWithTranslations();
+    return markedWords.length >= minWords;
+  }
+
   // รีเซ็ตสถิติทั้งหมด
   resetStats() {
     this.stats = {};

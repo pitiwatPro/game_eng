@@ -76,6 +76,7 @@ const WordMatchGame = () => {
   const [showStats, setShowStats] = useState(false);
   const [showMarkedWords, setShowMarkedWords] = useState(false);
   const [statsUpdateKey, setStatsUpdateKey] = useState(0);
+  const [gameMode, setGameMode] = useState('normal'); // 'normal' | 'marked'
 
   // Refs for audio synthesizers
   const synths = useRef(null);
@@ -113,8 +114,21 @@ const WordMatchGame = () => {
     setSelectedCard(null);
     setIncorrectPair(null);
 
-    // ใช้ weighted random selection แทนการสุ่มปกติ
-    const newWordPairs = wordStatsManager.weightedRandomSelection(wordList, 4);
+    // เลือกคำตามโหมดเกม
+    let newWordPairs;
+    if (gameMode === 'marked') {
+      newWordPairs = wordStatsManager.markedWordsRandomSelection(4);
+      // ถ้าไม่มีคำ mark เพียงพอ ให้กลับไปโหมดปกติ
+      if (newWordPairs.length < 4) {
+        setGameMode('normal');
+        setMessage("⚠️ คำที่ mark ไม่เพียงพอ กลับสู่โหมดปกติ");
+        newWordPairs = wordStatsManager.weightedRandomSelection(wordList, 4);
+      }
+    } else {
+      // โหมดปกติ: ใช้ weighted random selection แทนการสุ่มปกติ
+      newWordPairs = wordStatsManager.weightedRandomSelection(wordList, 4);
+    }
+    
     setCurrentWords(newWordPairs);
     setEnglishWords(shuffleArray(newWordPairs.map((p) => p.en)));
     setThaiWords(shuffleArray(newWordPairs.map((p) => p.th)));
@@ -126,7 +140,7 @@ const WordMatchGame = () => {
   // Initialize game on component mount
   useEffect(() => {
     initGame();
-  }, []);
+  }, [gameMode]); // เพิ่ม gameMode เป็น dependency
 
   // Function to speak a word
   const speakWord = (word) => {
@@ -612,6 +626,11 @@ const WordMatchGame = () => {
               <div></div>
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
                 🎯 เกมจับคู่คำศัพท์
+                {gameMode === 'marked' && (
+                  <div className="text-sm font-normal text-orange-600 mt-1">
+                    🔖 โหมดฝึกคำยาก
+                  </div>
+                )}
               </h1>
               <div className="flex gap-2">
                 <button
@@ -631,11 +650,20 @@ const WordMatchGame = () => {
               </div>
             </div>
             <p className="mt-2 text-sm sm:text-base text-slate-500">
-              เลือกคำศัพท์ภาษาอังกฤษและคำแปลภาษาไทยที่คู่กัน
+              {gameMode === 'marked' 
+                ? 'ฝึกฝนเฉพาะคำที่คุณ mark ว่ายาก' 
+                : 'เลือกคำศัพท์ภาษาอังกฤษและคำแปลภาษาไทยที่คู่กัน'
+              }
             </p>
             <div className="mt-2 text-xs text-slate-400 space-y-1">
-              <div>💡 ระบบจะจำการเล่นของคุณและเลือกคำที่เหมาะสมให้</div>
-              <div>🔥 = คำยาก | ✨ = คำง่าย | � = คำที่ mark | �📊 = ดูสถิติ</div>
+              {gameMode === 'marked' ? (
+                <div>🔖 คำเหล่านี้จะช่วยเสริมจุดอ่อนของคุณ</div>
+              ) : (
+                <>
+                  <div>💡 ระบบจะจำการเล่นของคุณและเลือกคำที่เหมาะสมให้</div>
+                  <div>🔥 = คำยาก | ✨ = คำง่าย | 🔖 = คำที่ mark | 📊 = ดูสถิติ</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -698,6 +726,33 @@ const WordMatchGame = () => {
               >
                 🔄 เริ่มใหม่
               </button>
+              
+              {/* ปุ่มสลับโหมดเล่นเฉพาะคำที่ mark */}
+              {wordStatsManager.canPlayMarkedMode(10) && (
+                <button
+                  onClick={() => {
+                    const newMode = gameMode === 'normal' ? 'marked' : 'normal';
+                    setGameMode(newMode);
+                    if (newMode === 'marked') {
+                      setMessage("🔖 โหมดฝึกคำที่ mark ไว้");
+                    } else {
+                      setMessage("🎮 กลับสู่โหมดปกติ");
+                    }
+                    setTimeout(() => setMessage(""), 2000);
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                    gameMode === 'marked' 
+                      ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                      : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                  }`}
+                >
+                  {gameMode === 'marked' 
+                    ? '🔖 กลับโหมดปกติ' 
+                    : `🔖 โหมดคำยาก (${wordStatsManager.getMarkedWordsWithTranslations().length})`
+                  }
+                </button>
+              )}
+              
               <button
                 onClick={() => {
                   if (selectedCard && selectedCard.lang === 'en') {
