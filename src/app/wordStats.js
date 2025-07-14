@@ -74,11 +74,16 @@ class WordStatsManager {
       return;
     }
 
+    // ถ้าคำนี้ถูก mark ไว้ ใช้กฎพิเศษ
+    if (stat.markedDifficult && stat.markedDifficult > 0) {
+      this.updateMarkedWordWeight(word);
+      return;
+    }
+
+    // กฎปกติสำหรับคำที่ไม่ถูก mark
     const correctRate = stat.correct / stat.totalSeen;
     const incorrectRate = stat.incorrect / stat.totalSeen;
     
-    // คำที่ตอบถูกบ่อย = weight ลดลง
-    // คำที่ตอบผิดบ่อย = weight เพิ่มขึ้น
     let newWeight = 1.0;
     
     if (correctRate > 0.7) {
@@ -91,6 +96,40 @@ class WordStatsManager {
     
     // จำกัด weight ให้อยู่ในช่วงที่กำหนด
     stat.weight = Math.max(this.minWeight, Math.min(this.maxWeight, newWeight));
+  }
+
+  // ปรับ weight สำหรับคำที่ mark ไว้ (Progressive Learning)
+  updateMarkedWordWeight(word) {
+    const stat = this.getWordStat(word);
+    
+    // ถ้าไม่เคยเล่น ให้ weight สูง
+    if (stat.totalSeen === 0) {
+      stat.weight = 1.8; // สูงกว่าปกติ
+      return;
+    }
+
+    const correctRate = stat.correct / stat.totalSeen;
+    
+    // ระบบ Progressive Learning: ต้องตอบถูกบ่อยและติดต่อกันถึงจะลด weight
+    if (correctRate >= 0.85 && stat.totalSeen >= 8) {
+      // ถูก 85%+ และเล่นอย่างน้อย 8 ครั้ง = ลดลงช้าๆ
+      stat.weight = Math.max(1.2, stat.weight - 0.1);
+    } else if (correctRate >= 0.75 && stat.totalSeen >= 6) {
+      // ถูก 75-84% และเล่นอย่างน้อย 6 ครั้ง = ลดนิดหน่อย
+      stat.weight = Math.max(1.4, stat.weight - 0.05);
+    } else if (correctRate >= 0.65 && stat.totalSeen >= 4) {
+      // ถูก 65-74% และเล่นอย่างน้อย 4 ครั้ง = คงที่
+      // ไม่เพิ่ม ไม่ลด
+    } else {
+      // ยังตอบไม่ดีพอ = เพิ่ม weight
+      stat.weight = Math.min(this.maxWeight, stat.weight + 0.15);
+    }
+    
+    // Weight ขั้นต่ำสำหรับคำที่ mark คือ 1.2 (ไม่ลดต่ำกว่านี้)
+    // เพื่อให้ยังคงเจอบ่อยกว่าคำปกติ
+    stat.weight = Math.max(1.2, stat.weight);
+    
+    console.log(`Update marked word "${word}": accuracy=${Math.round(correctRate*100)}%, attempts=${stat.totalSeen}, weight=${stat.weight.toFixed(2)}`);
   }
 
   // ทำเครื่องหมายคำว่ายาก (เพิ่ม weight)
